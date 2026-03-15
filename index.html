@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Onu Geri Alacagim</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #0a0e27;
+      overscroll-behavior: none;
+      touch-action: none;
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    #gc {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100%; height: 100%;
+      background: #0a0e27;
+    }
+
+    #gc canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      position: absolute;
+      top: 0; left: 0;
+    }
+
+    /* Fullscreen button - sadece fullscreen degil iken goster */
+    #fs-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 9998;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border: 2px solid #FF69B4;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 20px;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Fullscreen modda butonu gizle */
+    :fullscreen #fs-btn,
+    :-webkit-full-screen #fs-btn,
+    :-moz-full-screen #fs-btn {
+      display: none;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+</head>
+<body>
+  <div id="gc"></div>
+
+  <!-- Fullscreen butonu -->
+  <button id="fs-btn" title="Tam Ekran">⛶</button>
+
+  <script>
+    // ── Fullscreen helper (cross-browser + iOS PWA fallback) ──────────────
+    var fsBtn = document.getElementById('fs-btn');
+
+    function enterFullscreen() {
+      var el = document.documentElement;
+      if (el.requestFullscreen)             { el.requestFullscreen(); }
+      else if (el.webkitRequestFullscreen)  { el.webkitRequestFullscreen(); }
+      else if (el.mozRequestFullScreen)     { el.mozRequestFullScreen(); }
+      else if (el.msRequestFullscreen)      { el.msRequestFullscreen(); }
+      // iOS Safari doesn't support Fullscreen API at all;
+      // best we can do is tell user to "Add to Home Screen"
+    }
+
+    function exitFullscreen() {
+      if (document.exitFullscreen)            { document.exitFullscreen(); }
+      else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+      else if (document.mozCancelFullScreen)  { document.mozCancelFullScreen(); }
+      else if (document.msExitFullscreen)     { document.msExitFullscreen(); }
+    }
+
+    function isFullscreen() {
+      return !!(document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement);
+    }
+
+    fsBtn.addEventListener('click', function () {
+      if (isFullscreen()) { exitFullscreen(); fsBtn.textContent = '\u26F6'; }
+      else                { enterFullscreen(); fsBtn.textContent = '\u2715'; }
+    });
+
+    // Sync buton ikonu fullscreen degisince
+    ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange']
+      .forEach(function(ev) {
+        document.addEventListener(ev, function() {
+          fsBtn.textContent = isFullscreen() ? '\u2715' : '\u26F6';
+          // Phaser canvas'i yeniden boyutlandir
+          if (window._phaserGame && window._phaserGame.scale) {
+            setTimeout(function() {
+              window._phaserGame.scale.refresh();
+            }, 100);
+          }
+        });
+      });
+
+    // Orientation: portrait'te uyari goster
+    var rotOverlay = document.createElement('div');
+    rotOverlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:#0a0e27;color:#fff;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:sans-serif';
+    rotOverlay.innerHTML = '<div style="font-size:52px;margin-bottom:18px">&#128241;&#10145;&#65039;</div>' +
+      '<div style="font-size:20px;font-weight:bold;color:#FFD700">Lutfen telefonu yatay cevir!</div>' +
+      '<div style="font-size:14px;color:#aaa;margin-top:10px">Please rotate to landscape</div>';
+    document.body.appendChild(rotOverlay);
+
+    function checkOrientation() {
+      var portrait = window.innerHeight > window.innerWidth;
+      rotOverlay.style.display = portrait ? 'flex' : 'none';
+      if (window._phaserGame) {
+        window._phaserGame.canvas.style.display = portrait ? 'none' : 'block';
+        fsBtn.style.display = portrait ? 'none' : '';
+      }
+    }
+
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', function() { setTimeout(checkOrientation, 250); });
+    window.addEventListener('load', function() { setTimeout(checkOrientation, 300); });
+  </script>
+
+  <script src="./core.js"></script>
+  <script src="./levels.js"></script>
+</body>
+</html>
